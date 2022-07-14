@@ -1,0 +1,65 @@
+\documentclass[conference]{IEEEtran}
+\IEEEoverridecommandlockouts
+% The preceding line is only needed to identify funding in the first footnote. If that is unneeded, please comment it out.
+\usepackage{cite}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{algorithmic}
+\usepackage{graphicx}
+\usepackage{textcomp}
+\usepackage{xcolor}
+\usepackage[back-end=biber, style=ieee]{biblatex}
+\addbibresource{refs.bib}
+\begin{document}
+
+\title{IoT Traffic Management System}
+
+\author{\IEEEauthorblockN{Rohit Singh}
+\IEEEauthorblockA{\textit{Electrical Engineering} \\
+\textit{University of Waterloo}\\
+Waterloo, Ontario \\
+rkochhar@uwaterloo.ca}
+\and
+\IEEEauthorblockN{Vojdan Bojcev}
+\IEEEauthorblockA{\textit{Electrical Engineering} \\
+\textit{University of Waterloo}\\
+Waterloo, Ontario \\
+vbojcev@uwaterloo.ca}
+}
+
+\maketitle
+
+\begin{abstract}
+This document is a model and instructions for \LaTeX.
+This and the IEEEtran.cls file define the components of your paper [title, text, heads, etc.]. *CRITICAL: Do Not Use Symbols, Special Characters, Footnotes, 
+or Math in Paper Title or Abstract. \cite{Chong}\cite{Rizwan}\cite{Avetifipour}\cite{GOTTLICH}\cite{Ghena}.
+\end{abstract}
+
+\section{Introduction}
+\section{Literature Review}
+\section{Experiment Methodology}
+
+\subsection{Modelling of Transport Networks}
+
+For our experiment, we need to create a model that can represent traffic flow between intersections. To accomplish this, we use a directed graph with intersections represented by stateful nodes and traffic flow represented by edges. The states of a given node are determined by the quantities held by neighbouring edges.
+
+\section{Experimental Results}
+
+
+\printbibliography
+\end{document}
+
+\iffalse %NOTES/BRAINSTORMING
+
+CHONG:
+
+Discuss different network topologies: on-road, on-vehicle, or hybrid sensors. Discuss viability of having several wireless sensors at each intersection with one base station per intersection. Base stations can either be subservient to a master station or compute the optimization in a distributed manner. 
+
+Goal of optimization is to minimize unused green-light time. Optimization is based on local load (single-intersection) but also must consider downstream (at least adjacent) intersections as well. Flat-hierarchy/local computation architectures could be better for local optimization where only 1-hop adjacent intersections are considered whereas multi-leveled/globally-computed architectures could be better for city-wide computations.
+
+Generally, traffic algorithms are designed assuming a perfect network (i.e established city wifi/ethernet) which means state knowledge can be always known and known globally. Our project would take into consideration IoT devices that have their own network and low-power or self-powered devices such that the traffice network is minimally dependent on existing architecture (could be applicable to high-traffic, underdeveloped infrastructure locations; For example, much of south and south-east Asia). Discuss the different WSN protocols mentioned in class and explore their viabilisty in areas like range, power requirements, security risks.
+
+RIZWAN:
+
+
+
+\endif
