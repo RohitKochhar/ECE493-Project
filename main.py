@@ -12,6 +12,7 @@
 
 # Global Variables -----------------------------------------------
 CAR_LENGTH = 5
+INFINITY = 10000000000000
 
 # Class Declarations ---------------------------------------------
 
@@ -26,14 +27,29 @@ CAR_LENGTH = 5
 # 
 # . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 
 class Node:
-    def __init__(self, id, lat, long):
-        self.id     = id
-        self.edges  = []
-        self.lat    = lat
-        self.long   = long
+    def __init__(self, id, manager, lat, long):
+        self.manager    = manager
+        self.id         = id
+        self.edges      = []
+        self.lat        = lat
+        self.long       = long
 
+    # .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   . 
+    #
+    #	Method Name:    setEdge
+    #
+    #	Method Description:
+    #		-   Add an edge to the node
+    #
+    #	Method History:
+    #		- 2022-07-16: Created by Rohit S.
+    #
+    # .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   . 
     def setEdge(self, edge):
         self.edges.append(edge)
+
+    def __str__(self):
+        return f"Node {self.id}"
 
 # . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 
 #	Class Name:     NodeManager
@@ -50,9 +66,55 @@ class NodeManager:
         self.nodes = []
 
     def createNode(self, lat, long):
-        node = Node(len(self.nodes), lat, long)
+        node = Node(len(self.nodes), self, lat, long)
         self.nodes.append(node)
         return node
+
+    # .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   . 
+    #
+    #	Method Name:    determinePath
+    #
+    #	Method Description:
+    #		-   Run Djikstras from self node to a target node
+    #
+    #	Method History:
+    #		- 2022-07-16: Created by Rohit S.
+    #
+    # .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   . 
+    def determinePath(self, currentNode, targetNode):
+        # Mark all nodes unvisited
+        for node in self.nodes:
+            node.isVisited = False
+            # Mark all nodes with a tentative distance of infinity
+            if node != currentNode:
+                node.tentativeDistance = INFINITY
+            else:
+                node.tentativeDistance = 0
+        # Consider all unvisited nodes
+        while all([x.isVisited for x in self.nodes]) != True:
+            # Get remaining unvisted nodes:
+            unvisitedNodes = []
+            for node in self.nodes:
+                if node.isVisited == False:
+                    unvisitedNodes.append(node)
+            # Get the next smallest 
+            current = min(unvisitedNodes, key=lambda x: x.tentativeDistance)
+            if current == targetNode:
+                break
+            else:
+                # Consider the neighbours of current
+                for edge in current.edges:
+                    if current == edge.sourceNode:
+                        neighbour = edge.sinkNode
+                        # Check that the neighbour hasn't been visited
+                        if neighbour in self.nodes:
+                            # Check if a shorter path exists
+                            if edge.realTime + current.tentativeDistance <= neighbour.tentativeDistance:
+                                neighbour.tentativeDistance = edge.realTime + current.tentativeDistance
+                                current.isVisited = True
+
+        print(f"Min path from Node {currentNode.id} -> {targetNode.id} = {targetNode.tentativeDistance}")
+        return targetNode.tentativeDistance
 
 # . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 
 #	Class Name:         Edge
