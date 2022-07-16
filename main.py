@@ -111,9 +111,11 @@ class NodeManager:
                             # Check if a shorter path exists
                             if edge.realTime + current.tentativeDistance <= neighbour.tentativeDistance:
                                 neighbour.tentativeDistance = edge.realTime + current.tentativeDistance
-                                current.isVisited = True
+                
+                current.isVisited = True
 
-        print(f"Min path from Node {currentNode.id} -> {targetNode.id} = {targetNode.tentativeDistance}")
+
+        print(f"Min path from Node {currentNode.id} -> {targetNode.id} = {targetNode.tentativeDistance/3600} hours")
         return targetNode.tentativeDistance
 
 # . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 

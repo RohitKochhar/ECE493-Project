@@ -13,6 +13,7 @@
 from main import EdgeManager, Node, Edge, NodeManager
 
 # Global Variables -----------------------------------------------
+INFINITY = 10000000000000
 
 # Class Declarations ---------------------------------------------
 
@@ -147,3 +148,67 @@ def test_djikstras_with_trick_single_path():
     # Get min path
     minPath = nodeManager.determinePath(sourceNode, sinkNode)
     assert minPath == edge3.realTime
+
+def test_djikstras_no_path():
+    # Create managers
+    nodeManager = NodeManager()
+    edgeManager = EdgeManager()
+    # Create two nodes
+    sourceNode  = nodeManager.createNode(0, 0)
+    interNode   = nodeManager.createNode(0, 0)
+    sinkNode    = nodeManager.createNode(0, 0)
+    # Add an edge
+    edge        = edgeManager.createEdge(sourceNode, interNode, 5000, 100)
+    # Add a vehicle
+    edge.addVehicle()
+    # Get min path
+    minPath = nodeManager.determinePath(sourceNode, sinkNode)
+    assert minPath == INFINITY
+
+def test_complex_djikstras():
+    # Create managers
+    nodeManager = NodeManager()
+    edgeManager = EdgeManager()
+    # Create nodes
+    node0 = nodeManager.createNode(0, 0)
+    node1 = nodeManager.createNode(0, 0)
+    node2 = nodeManager.createNode(0, 0)
+    node3 = nodeManager.createNode(0, 0)
+    node4 = nodeManager.createNode(0, 0)
+    node5 = nodeManager.createNode(0, 0)
+    node6 = nodeManager.createNode(0, 0)
+    node7 = nodeManager.createNode(0, 0)
+    node8 = nodeManager.createNode(0, 0)
+    # Connect edges
+    edge01 = edgeManager.createEdge(node0, node1, 400, 1)
+    edge01.addVehicle()
+    edge06 = edgeManager.createEdge(node0, node6, 700, 1)
+    edge06.addVehicle()
+    edge16 = edgeManager.createEdge(node1, node6, 400, 1)
+    edge16.addVehicle()
+    edge67 = edgeManager.createEdge(node6, node7, 100, 1) 
+    edge67.addVehicle()
+    edge17 = edgeManager.createEdge(node1, node7, 2000, 1)
+    edge17.addVehicle()
+    edge74 = edgeManager.createEdge(node7, node4, 100, 1)
+    edge74.addVehicle()
+    edge12 = edgeManager.createEdge(node1, node2, 900, 1)
+    edge12.addVehicle()
+    edge42 = edgeManager.createEdge(node4, node2, 200, 1)
+    edge42.addVehicle()
+    edge23 = edgeManager.createEdge(node2, node3, 600, 1)
+    edge23.addVehicle()
+    edge43 = edgeManager.createEdge(node4, node3, 1000, 1)
+    edge43.addVehicle()
+
+
+
+
+    assert nodeManager.determinePath(node0, node1) == 400 * 3600
+    assert nodeManager.determinePath(node0, node6) == 700 * 3600
+    assert nodeManager.determinePath(node0, node7) == 800 * 3600
+    assert nodeManager.determinePath(node0, node4) == 900 * 3600
+    assert nodeManager.determinePath(node0, node2) == 1100 * 3600
+    assert nodeManager.determinePath(node0, node3) == 1700 * 3600
+    
+# ToDo: Test with bi-directional paths
