@@ -73,10 +73,9 @@ def test_delay():
     # Add vehicles to edge
     while edge.d > 1:
         edge.addVehicle()
-        print(edge)
+        #print(edge)
     
-
-def test_congestion():
+def test_simple_djikstras():
     # Create managers
     nodeManager = NodeManager()
     edgeManager = EdgeManager()
@@ -84,11 +83,67 @@ def test_congestion():
     sourceNode  = nodeManager.createNode(0, 0)
     sinkNode    = nodeManager.createNode(0, 0)
     # Add an edge
-    edge        = edgeManager.createEdge(sourceNode, sinkNode, 50, 100)
-    # Save data
-    congestion = edge.congestion
-    # add cars
-    for i in range(0, 100):
-        edge.addVehicle()
-    # assert congestion != edge.congestion
+    edge        = edgeManager.createEdge(sourceNode, sinkNode, 5000, 100)
+    # Add a vehicle
+    edge.addVehicle()
+    # Get min path
+    minPath = nodeManager.determinePath(sourceNode, sinkNode)
+    assert minPath == edge.realTime
+
+def test_double_djikstras():
+    # Create managers
+    nodeManager = NodeManager()
+    edgeManager = EdgeManager()
+    # Create three nodes
+    sourceNode  = nodeManager.createNode(0, 0)
+    interNode   = nodeManager.createNode(0, 0)
+    sinkNode    = nodeManager.createNode(0, 0)
+    # Add edges
+    edge1       = edgeManager.createEdge(sourceNode, interNode, 5000, 100)
+    edge2       = edgeManager.createEdge(interNode, sinkNode, 1000, 100)
+    # Add vehicles
+    edge1.addVehicle()
+    edge2.addVehicle()    
+    # Get min path
+    minPath = nodeManager.determinePath(sourceNode, sinkNode)
+    assert minPath == edge1.realTime + edge2.realTime
     
+def test_djikstras_with_trick_double_path():
+    # Create managers
+    nodeManager = NodeManager()
+    edgeManager = EdgeManager()
+    # Create three nodes
+    sourceNode  = nodeManager.createNode(0, 0)
+    interNode   = nodeManager.createNode(0, 0)
+    sinkNode    = nodeManager.createNode(0, 0)
+    # Add edges
+    edge1       = edgeManager.createEdge(sourceNode, interNode, 5000, 100)
+    edge2       = edgeManager.createEdge(interNode, sinkNode, 1000, 100)
+    edge3       = edgeManager.createEdge(sourceNode, sinkNode, 1000000, 100)
+    # Add vehicles
+    edge1.addVehicle()
+    edge2.addVehicle()    
+    edge3.addVehicle()
+    # Get min path
+    minPath = nodeManager.determinePath(sourceNode, sinkNode)
+    assert minPath == edge1.realTime + edge2.realTime
+
+def test_djikstras_with_trick_single_path():
+    # Create managers
+    nodeManager = NodeManager()
+    edgeManager = EdgeManager()
+    # Create three nodes
+    sourceNode  = nodeManager.createNode(0, 0)
+    interNode   = nodeManager.createNode(0, 0)
+    sinkNode    = nodeManager.createNode(0, 0)
+    # Add edges
+    edge1       = edgeManager.createEdge(sourceNode, interNode, 5000, 100)
+    edge2       = edgeManager.createEdge(interNode, sinkNode, 1000, 100)
+    edge3       = edgeManager.createEdge(sourceNode, sinkNode, 10, 100)
+    # Add vehicles
+    edge1.addVehicle()
+    edge2.addVehicle()    
+    edge3.addVehicle()
+    # Get min path
+    minPath = nodeManager.determinePath(sourceNode, sinkNode)
+    assert minPath == edge3.realTime
