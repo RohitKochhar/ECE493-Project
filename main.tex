@@ -3,15 +3,16 @@
 % The preceding line is only needed to identify funding in the first footnote. If that is unneeded, please comment it out.
 \usepackage{cite}
 \usepackage{amsmath,amssymb,amsfonts}
-\usepackage{algorithmic}
 \usepackage{graphicx}
 \usepackage{textcomp}
 \usepackage{xcolor}
 \usepackage[back-end=biber, style=ieee]{biblatex}
+\usepackage{algorithm} 
+\usepackage{algpseudocode} 
 \addbibresource{refs.bib}
 \begin{document}
 
-\title{IoT Traffic Management System}
+\title{IoT Traffic Management System for Autonomous Vehicles}
 
 \author{\IEEEauthorblockN{Rohit Singh}
 \IEEEauthorblockA{\textit{Electrical Engineering} \\
@@ -35,12 +36,83 @@ or Math in Paper Title or Abstract. \cite{Chong}\cite{Rizwan}\cite{Avetifipour}\
 \end{abstract}
 
 \section{Introduction}
+
+With the population of city centres rapidly increasing, the number of vehicles on the road is quickly becoming unsustainable for the current infrastructure. Densely populated cities such as Los Angeles and New York have become notorious for their gridlock and traffic, and there is little evidence to suggest that this problem will relent any time soon. 
+
+While autonomous vehicles (AVs) propose a solution to the causes of traffic due to human-error, the larger issue comes from the non-dynamic implementation of traffic control systems such as stop lights. Theses systems can be seen as stateful controls that switch state to route traffic in a certain way. Despite the fact that the state of a given traffic light directly affects the traffic at another, these systems are largely isolated and do not typically communicate with each other. Because of this, traffic in one direction can become highly backed up while opposing traffic moves freely. 
+
+In this work, we aim to propose a novel solution that transforms traditional traffic networks into dynamic sensor networks that communicate traffic flow information to autonomous vehicles within the network. Our proposed solution would allow traffic lights to act as communicating beacons, relaying information to the path planning systems of autonomous vehicles to allow them to adopt the ideal route to reach their target destination.
+
 \section{Literature Review}
 \section{Experiment Methodology}
 
-\subsection{Modelling of Transport Networks}
+\subsection{Modelling of Transport Networks}\label{sec:modelling}
 
-For our experiment, we need to create a model that can represent traffic flow between intersections. To accomplish this, we use a directed graph with intersections represented by stateful nodes and traffic flow represented by edges. The states of a given node are determined by the quantities held by neighbouring edges.
+For our experiment, we need to create a model that can represent traffic flow between intersections. To accomplish this, we use a directed graph with intersections represented by nodes and traffic flow parameters representing the weights of connecting edges. Edges between nodes are uni-directional, which allows for one-way traffic flow to be modelled by a single edge or two-way traffic flow to be modelled by two edges. Each edge has an associated \textit{source} node (node from which traffic flows) and an associated \textit{sink} node (node to which traffic flows). The nodes serve as beacon points to communicate traffic data collected by the edges across the network to the AVs passing through each intersection.
+
+\subsubsection{Traffic Flow (Edge) Modelling}\label{sec:edge}
+
+In the modelling of the edges of our graph, we must characterize edges with relevant parameters that impact traffic flow. Therefore, we load the edges with the following information:
+
+\begin{itemize}
+    \item \textbf{Length}, $L$: This parameter is a floating point integer which represents the length of the edge (distance between the source and sink nodes) in kilometres. This is a metric of importance as it provides information (along with speed limit) as to the ideal time for a vehicle to complete travel along this path.
+    \item \textbf{Speed Limit}, $v$: This parameter is a integer which represents the ideal \textit{maximum speed} a vehicle maintains along this path in kilometres per hour. We are operating under the assumption that the speed limit is not violated by vehicles in the system, and that the speed limit is a constant across an entire edge.
+    \item \textbf{Number of Vehicles}, $N$: This parameter is an integer which represents the number of vehicles travelling on the edge at a given moment in time. The higher this number, the more congestion occurs, resulting in reduced traffic flow.
+    \item \textbf{Minimum Travel Time}, $t_{min}$: This parameter is an integer which represents the ideal time it takes for a vehicle to complete a trip across an edge, in seconds. This parameter is calculated by the simple equation: 
+    \begin{equation}
+        t_{min} = \frac{L}{v} \times 3600
+    \end{equation}
+    \item \textbf{Actual Travel Time}, $t_{real}$: This parameter is an integer which represents the actual time takes for a vehicle to complete a trip across an edge. This is a calculated parameter which is a function of the number of vehicles, length, and the minimum travel time of the edge. In modelling the function that governs this parameter, we make the following assumptions:
+    \begin{itemize}
+        \item The average length of vehicles along the edge is 5 meters \cite{carsize}
+        \item When cars get within 10 meters of each other, their speed decreases due to braking events at the lead vehicle causing a \textit{concertina effect}, in which differences in vehicle control system response times causes cascading delays along chains of vehicles. To model this effect, we determine the average distance between vehicles (given in units of meters per vehicle) with the following equation:
+        \begin{equation}
+            d = \frac{L - 5N}{N} 
+        \end{equation}
+        From this definition of $d$, we can define the actual speed due to traffic delays caused by a large volume of traffic, $v_{real}$. $v_{real}$ is inversely proportional to the square $d$, since the smaller the distance between cars, the more compounding delays are experienced across the vehicles on the edge. We define $v_{real}$ as follows:
+        \begin{equation}\label{eq:v-real}
+            v_{real} = 
+        \left\{ \begin{array}{ll}
+            v & d > 10 \\
+            v(1 - \frac{1}{d}) & 10 \ge d > 1 \\ 
+            1 & \text{otherwise}
+        \end{array} \right.
+        \end{equation}
+        This equation is an accurate model for slow-down among vehicles due to large volumes of traffic, as we see a sharp decrease in $v_{real}$ as $d$ approaches values smaller than $2$ meters, which can be interpreted as the significant decrease in speed during bumper-to-bumper traffic. 
+    \end{itemize}
+    From equation \ref{eq:v-real}, we define $t_{real}$ as:
+    \begin{equation}
+        t_{real} = \frac{L}{v_{real}}\times 3600
+    \end{equation}
+    \item \textbf{Congestion}, $C$: This parameter is the key metric in controlling the states of the nodes, and is calculated by the equation:
+    \begin{equation}
+        C = \frac{t_{real}}{t_{min}} = \frac{v}{v_{real}} = \frac{v}{v(1 - \frac{1}{d})} = \frac{1}{1-\frac{N}{L-5N}}
+    \end{equation}
+    From this, we can see that when there is adequate space between vehicles on the road, $C = 1$, and as the number of vehicles on the edge increases (and consequently the space between vehicles on the road decreases), $C \to \infty$.
+    
+\end{itemize}
+
+\subsubsection{Traffic Intersection (Node) Modelling}\label{sec:node}
+
+As mentioned earlier in section \ref{sec:modelling}, our nodes are communicating beacons that relay traffic information to AVs within the network. The communication between the node and a given AV in the network closely follows the pseudo-code function shown in algorithm \ref{code:vtn-comm}. 
+
+\begin{algorithm}
+	\caption{Vehicle-to-Node Communication}\label{code:vtn-comm}
+	\begin{algorithmic}[1]
+	    \If {communication established}:
+	        \State AV sends node target location
+	        \State Node computes optimized path
+	        \State Node sends AV optimized path to target
+	        \State AV path planning system updates route
+	    \EndIf
+	\end{algorithmic} 
+\end{algorithm}
+
+Notice that in this system, our nodes are responsible for the computation of the ideal path, rather than the AV's computer. This is to prevent the transmission of large data packets to the AV, since the only data transmitted is the location of the next node the AV must travel to.
+
+Since we must communicate the locations of the nodes to the autonomous vehicle, each node must store a record of its latitude and longitude. This allows the target location to be communicated in a way that can be interpreted by the majority of path-planning systems used for AVs \cite{pathplanning}.
+
+The method by which the node determines the optimized route is by running Djikstra's algorithm to determine the shortest path in terms of time between the current node and the target node communicated by the AV.
 
 \section{Experimental Results}
 
