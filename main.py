@@ -13,6 +13,7 @@
 # Global Variables -----------------------------------------------
 from random import randint
 from time import sleep
+from typing import Type
 
 
 CAR_LENGTH = 5
@@ -256,7 +257,9 @@ class Edge:
     # .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   . 
     def setD(self):
         self.d = float((self.length - CAR_LENGTH*self.numCars) / self.numCars)
-
+        if self.d <= 0:
+            raise ValueError("Edge is full, cannot add vehicle")
+        
     # .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   . 
     #
     #	Method Name:    setRealSpeed
@@ -274,8 +277,11 @@ class Edge:
         elif self.d > 1:
             self.realSpeed = self.maxSpeed*(1 - (1/self.d))
         
-        self.realTime = (self.length / self.realSpeed) * 3600
-
+        try:
+            self.realTime = (self.length / self.realSpeed) * 3600
+        except TypeError as e:
+            print(self.length, self.realSpeed, self.d)
+            sleep(5)
     # .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   . 
     #
     #	Method Name:    setCongestion
@@ -303,10 +309,23 @@ class Edge:
     # .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   . 
 
     def addVehicle(self):
-        self.numCars += 1
-        self.setD()
-        self.setRealSpeed()
-        self.setCongestion()
+        try:
+            self.numCars += 1
+            self.setD()
+            self.setRealSpeed()
+            self.setCongestion()
+            self.isFull = False
+        except ValueError as e:
+            self.isFull = True
+
+
+    def removeVehicle(self):
+        self.numCars -= 1
+        if self.numCars != 0:
+            self.setD()
+            self.setRealSpeed()
+            self.setCongestion()
+
 
     def __str__(self):
         return f"edge{self.sourceNode.id}{self.sinkNode.id}"
@@ -344,11 +363,16 @@ class EdgeManager:
                 return edge
 
 class Vehicle:
-    def __init__(self, startNode, endNode, nodeManager):
+    def __init__(self, startNode, endNode, nodeManager, id):
+        self.id             = id
         self.startNode      = startNode
         self.endNode        = endNode
         self.baselinePath   = nodeManager.determineBaselinePath(self.startNode, self.endNode)
         timeLeftOnEdge      = INFINITY
+
+    def setCurrentEdge(self, edge):
+        edge.addVehicle()
+        self.currentEdge = edge
 
     def updateEdge(self):
         for i in range(0, len(self.edges)):
@@ -358,6 +382,7 @@ class Vehicle:
                     self.currentEdge = self.nextEdge
                     self.timeLeftOnEdge = self.currentEdge.minTime
                 except IndexError as e:
+                    self.currentEdge.removeVehicle()
                     self.nextEdge = None    
                     self.currentEdge = self.nextEdge
 
@@ -378,6 +403,10 @@ class Simulator:
         self.edgeManager    = edgeManager
         self.vehicles       = []
 
+    def addVehicle(self, startNode, endNode):
+        vehicle     = Vehicle(startNode, endNode, self.nodeManager, id=len(self.vehicles))
+        self.vehicles.append(vehicle)
+
     def addRandomVehicle(self):
         numNodes = len(self.nodeManager.nodes)
         startNode   = self.nodeManager.nodes[randint(0, numNodes - 1)]
@@ -387,38 +416,50 @@ class Simulator:
         vehicle     = Vehicle(startNode, endNode, self.nodeManager)
         self.vehicles.append(vehicle)
 
-    def startSimulation(self):
+    def startBaselineSimulation(self):
+        self.activeVehicles = self.vehicles
+        self.doneVehicles   = []
         print(f"-------------------------------")
         print(f"Starting Simulation...")
-        print(f"\tNumber of Vehicles: {len(self.vehicles)}")
-        for i in range(0, len(self.vehicles)):
-            print(f"\t\tVehicle {i} travelling from {self.vehicles[i].startNode} to {self.vehicles[i].endNode}")
-            minTime, minPath, minEdges = self.vehicles[i].baselinePath
+        print(f"\tNumber of Vehicles: {len(self.activeVehicles)}")
+        for i in range(0, len(self.activeVehicles)):
+            print(f"\t\tVehicle {i} travelling from {self.activeVehicles[i].startNode} to {self.vehicles[i].endNode}")
+            minTime, minPath, minEdges = self.activeVehicles[i].baselinePath
+            self.activeVehicles[i].expectedTravelTime = minTime
+            self.activeVehicles[i].path = minPath
             print(f"\t\t\tBaseline Path: {' -> '.join(str(node) for node in minPath)}")
             print(f"\t\t\tStarting on edge: {minEdges[0]}")
-            self.vehicles[i].currentEdge = minEdges[0]
-            self.vehicles[i].edges       = minEdges
-            print(f"\t\t\tTime remaining on edge: {minEdges[0].minTime} seconds")
-            self.vehicles[i].timeLeftOnEdge = minEdges[0].minTime
+            self.activeVehicles[i].setCurrentEdge(minEdges[0])
+            self.activeVehicles[i].edges       = minEdges
+            print(f"\t\t\tTime remaining on edge: {minEdges[0].realTime} seconds")
+            self.activeVehicles[i].timeSpentOnEdge = 0
         step = 0
-        while len(self.vehicles) != 0:
+        while len(self.activeVehicles) != 0:
             print(f"- - - - - Simulation Step {step} - - - - -")
             self.updateSimulation()
             step += 1
 
+        print(f"All vehicles have completed trips, simulation over")
+        print(f"- - - - - Results - - - - - - ")
+        for vehicle in self.doneVehicles:
+            print(f"Vehicle {vehicle.id}:")
+            print(f"\tTravelled from {' -> '.join(str(node) for node in minPath)} in {sum(x.realTime for x in vehicle.edges)} instead of the expected {vehicle.expectedTravelTime}")
+        print(f"-------------------------------")
+
     def updateSimulation(self):
-        for vehicle in self.vehicles:
+        for vehicle in self.activeVehicles:
             print(f"Vehicle on edge: {vehicle.currentEdge}")
-            vehicle.timeLeftOnEdge -= 1
-            if vehicle.timeLeftOnEdge <= 0:
+            vehicle.timeSpentOnEdge += 1
+            if vehicle.timeSpentOnEdge >= vehicle.currentEdge.realTime:
                 print(f"\tCompleted Trip on edge")
                 vehicle.updateEdge()
                 if vehicle.currentEdge == None:
-                    self.vehicles.remove(vehicle)
+                    self.doneVehicles.append(vehicle)
+                    self.activeVehicles.remove(vehicle)
                     del(vehicle)
                     print(len(self.vehicles))
             else:
-                print(f"\tTime left on edge: {vehicle.timeLeftOnEdge}")
+                print(f"\tTime left on edge: {vehicle.currentEdge.realTime - vehicle.timeSpentOnEdge}")
 
         
 # Function Declarations ------------------------------------------
