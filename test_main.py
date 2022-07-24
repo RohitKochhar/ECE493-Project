@@ -10,14 +10,19 @@
 # . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 
 
 # Imports --------------------------------------------------------
-from main import EdgeManager, Node, Edge, NodeManager, Simulator
+import pytest
+from nodeManager import NodeManager
+from simulator import Simulator
+from edgeManager import EdgeManager
+from vehicleManager import VehicleManager
 
 # Global Variables -----------------------------------------------
 INFINITY = 100000000000000000
 
 # Class Declarations ---------------------------------------------
 
-# Function Declarations ------------------------------------------
+# Function Declarations -----------------------------------------
+@pytest.mark.setup
 def test_simple_connect():
     # Create node and edge manager
     nodeManager = NodeManager()
@@ -32,6 +37,7 @@ def test_simple_connect():
     assert edge in sourceNode.edges
     assert edge in sinkNode.edges
 
+@pytest.mark.setup
 def test_multi_connect():
     nodeManager = NodeManager()
     edgeManager = EdgeManager()
@@ -50,6 +56,7 @@ def test_multi_connect():
     
     assert len(centralNode.edges) == len(subnodes)
 
+@pytest.mark.setup
 def test_speed_and_length():
     # Create managers
     nodeManager = NodeManager()
@@ -61,7 +68,8 @@ def test_speed_and_length():
     edge        = edgeManager.createEdge(sourceNode, sinkNode, 50, 100)
     # Test correct minTime is found
     assert edge.minTime == 1800
-
+    
+@pytest.mark.setup
 def test_delay():
     # Create managers
     nodeManager = NodeManager()
@@ -74,8 +82,64 @@ def test_delay():
     # Add vehicles to edge
     while edge.d > 1:
         edge.addVehicle()
-        #print(edge)
+
+@pytest.mark.setup
+def test_invalid_edge():
+    # Create managers
+    nodeManager = NodeManager()
+    edgeManager = EdgeManager()
+    # Create two nodes
+    sourceNode  = nodeManager.createNode(0, 0)
+    sinkNode    = nodeManager.createNode(0, 0)
+    # Add an edge
+    edge        = edgeManager.createEdge(sourceNode, sinkNode, 5000, 100)
+    with pytest.raises(ValueError) as e_info:
+        edge2        = edgeManager.createEdge(sourceNode, sinkNode, 5000, 100)
+
+@pytest.mark.setup
+def test_full_edge():
+    # Create managers
+    nodeManager = NodeManager()
+    edgeManager = EdgeManager()
+    # Create two nodes
+    sourceNode  = nodeManager.createNode(0, 0)
+    sinkNode    = nodeManager.createNode(0, 0)
+    # Add an edge
+    edge        = edgeManager.createEdge(sourceNode, sinkNode, 100, 100)
+    for i in range(0, 1000):
+        try:
+            edge.addVehicle()
+        except ValueError as e:
+            break
+           
+    assert edge.isFull
+    assert edge.numCars < 1000
+
+@pytest.mark.setup
+def test_unfull_edge():
+    # Create managers
+    nodeManager = NodeManager()
+    edgeManager = EdgeManager()
+    # Create two nodes
+    sourceNode  = nodeManager.createNode(0, 0)
+    sinkNode    = nodeManager.createNode(0, 0)
+    # Add an edge
+    edge        = edgeManager.createEdge(sourceNode, sinkNode, 100, 100)
+    for i in range(0, 1000):
+        try:
+            edge.addVehicle()
+        except ValueError as e:
+            break
     
+    assert edge.isFull
+    assert edge.numCars < 1000
+
+    while edge.isFull:
+        edge.removeVehicle()
+
+    assert edge.isFull == False
+
+@pytest.mark.setup
 def test_simple_djikstras():
     # Create managers
     nodeManager = NodeManager()
@@ -88,7 +152,8 @@ def test_simple_djikstras():
     # Get min path
     minPath, path, edges = nodeManager.determinePath(sourceNode, sinkNode)
     assert minPath == edge.realTime
-
+    
+@pytest.mark.setup
 def test_double_djikstras():
     # Create managers
     nodeManager = NodeManager()
@@ -103,7 +168,8 @@ def test_double_djikstras():
     # Get min path
     minPath, path, edges = nodeManager.determinePath(sourceNode, sinkNode)
     assert minPath == edge1.realTime + edge2.realTime
-    
+        
+@pytest.mark.setup
 def test_djikstras_with_trick_double_path():
     # Create managers
     nodeManager = NodeManager()
@@ -119,7 +185,8 @@ def test_djikstras_with_trick_double_path():
     # Get min path
     minPath, path, edges = nodeManager.determinePath(sourceNode, sinkNode)
     assert minPath == edge1.realTime + edge2.realTime
-
+    
+@pytest.mark.setup
 def test_djikstras_with_trick_single_path():
     # Create managers
     nodeManager = NodeManager()
@@ -135,7 +202,8 @@ def test_djikstras_with_trick_single_path():
     # Get min path
     minPath, path, edges = nodeManager.determinePath(sourceNode, sinkNode)
     assert minPath == edge3.realTime
-
+    
+@pytest.mark.setup
 def test_djikstras_no_path():
     # Create managers
     nodeManager = NodeManager()
@@ -151,7 +219,8 @@ def test_djikstras_no_path():
     # Get min path
     minPath, path, edges = nodeManager.determinePath(sourceNode, sinkNode)
     assert minPath == INFINITY
-
+    
+@pytest.mark.setup
 def test_complex_djikstras():
     # Create managers
     nodeManager = NodeManager()
@@ -184,9 +253,8 @@ def test_complex_djikstras():
     assert nodeManager.determinePath(node0, node4)[0] == 900 * 3600
     assert nodeManager.determinePath(node0, node2)[0] == 1100 * 3600
     assert nodeManager.determinePath(node0, node3)[0] == 1700 * 3600
-    
-# ToDo: Test with bi-directional paths
-
+        
+@pytest.mark.setup
 def test_simple_bidirectional_network():
     # Create managers
     nodeManager = NodeManager()
@@ -202,7 +270,8 @@ def test_simple_bidirectional_network():
     # Get min path
     minPath, path, edges = nodeManager.determinePath(sourceNode, sinkNode)
     assert minPath == edge1.realTime + edge2.realTime
-
+    
+@pytest.mark.oldsim
 def test_simple_simulation():
     # Create managers
     nodeManager = NodeManager()
@@ -215,8 +284,27 @@ def test_simple_simulation():
     # Create simulator
     sim = Simulator(nodeManager, edgeManager)
     sim.addRandomVehicle()
-    sim.startSimulation()
+    sim.startBaselineSimulation()
+    
+@pytest.mark.oldsim
+def test_two_step_simulation():
+    # Create managers
+    nodeManager = NodeManager()
+    edgeManager = EdgeManager()
+    # Create nodes
+    sourceNode  = nodeManager.createNode(0, 0)
+    interNode   = nodeManager.createNode(0, 0)
+    sinkNode    = nodeManager.createNode(0, 0)
+    # Add edges
+    edge01          = edgeManager.createBidirectionalEdge(sourceNode, interNode, 40, 110)
+    edge12          = edgeManager.createBidirectionalEdge(interNode, sinkNode, 40, 110)
+    # Create simulator
+    sim = Simulator(nodeManager, edgeManager)
+    for i in range(0, 1000):
+        sim.addVehicle(sourceNode, sinkNode)
+    sim.startBaselineSimulation()
 
+@pytest.mark.oldsim
 def test_network_1():
     greenLength     = 40
     greenSpeed      = 110
@@ -295,4 +383,36 @@ def test_network_1():
     edgeJF      = edgeManager.createBidirectionalEdge(nodeJ, nodeF, redLength, redSpeed)
     edgeGI      = edgeManager.createBidirectionalEdge(nodeG, nodeI, redLength, redSpeed)
 
-    simulator = Simulator(nodeManager, edgeManager)
+    sim = Simulator(nodeManager, edgeManager)
+    for i in range(0, 1000):
+        sim.addVehicle(nodeA, nodeC)
+    sim.startBaselineSimulation()
+
+@pytest.mark.sim
+def test_simulation_setup():
+    # Create a simulator
+    sim = Simulator()
+    # Create nodes
+    nodeA = sim.createNode(0, 0)
+    nodeB = sim.createNode(0, 0)
+    nodeC = sim.createNode(0, 0)
+    nodeD = sim.createNode(0, 0)
+    assert len(sim.nodes) == 4
+    # Create edges
+    edgeAB = sim.createEdge(nodeA, nodeB, 100, 100)
+    edgeBC = sim.createEdge(nodeB, nodeC, 100, 100, False)
+    edgeCD = sim.createEdge(nodeC, nodeD, 100, 100)
+    edgeDA = sim.createEdge(nodeD, nodeA, 100, 100, False)
+    assert len(sim.edges) == 2*2 + 2
+    # Add 3 vehicles to each path
+    for startingNode in sim.nodes:
+        for targetNode in sim.nodes:
+            if startingNode != targetNode:
+                for i in range(0, 3):
+                    sim.createVehicle(startingNode, targetNode)
+    assert len(sim.vehicles) == 36
+    # Run the baseline simulation
+    sim.runBaselineSimulation()
+
+
+
