@@ -11,14 +11,17 @@
 
 # Imports --------------------------------------------------------
 import pytest
-from main import EdgeManager, Node, Edge, NodeManager, Simulator
+from nodeManager import NodeManager
+from simulator import Simulator
+from edgeManager import EdgeManager
+from vehicleManager import VehicleManager
 
 # Global Variables -----------------------------------------------
 INFINITY = 100000000000000000
 
 # Class Declarations ---------------------------------------------
 
-# Function Declarations ------------------------------------------
+# Function Declarations -----------------------------------------
 @pytest.mark.setup
 def test_simple_connect():
     # Create node and edge manager
@@ -79,8 +82,63 @@ def test_delay():
     # Add vehicles to edge
     while edge.d > 1:
         edge.addVehicle()
-        #print(edge)
-        
+
+@pytest.mark.setup
+def test_invalid_edge():
+    # Create managers
+    nodeManager = NodeManager()
+    edgeManager = EdgeManager()
+    # Create two nodes
+    sourceNode  = nodeManager.createNode(0, 0)
+    sinkNode    = nodeManager.createNode(0, 0)
+    # Add an edge
+    edge        = edgeManager.createEdge(sourceNode, sinkNode, 5000, 100)
+    with pytest.raises(ValueError) as e_info:
+        edge2        = edgeManager.createEdge(sourceNode, sinkNode, 5000, 100)
+
+@pytest.mark.setup
+def test_full_edge():
+    # Create managers
+    nodeManager = NodeManager()
+    edgeManager = EdgeManager()
+    # Create two nodes
+    sourceNode  = nodeManager.createNode(0, 0)
+    sinkNode    = nodeManager.createNode(0, 0)
+    # Add an edge
+    edge        = edgeManager.createEdge(sourceNode, sinkNode, 100, 100)
+    for i in range(0, 1000):
+        try:
+            edge.addVehicle()
+        except ValueError as e:
+            break
+           
+    assert edge.isFull
+    assert edge.numCars < 1000
+
+@pytest.mark.setup
+def test_unfull_edge():
+    # Create managers
+    nodeManager = NodeManager()
+    edgeManager = EdgeManager()
+    # Create two nodes
+    sourceNode  = nodeManager.createNode(0, 0)
+    sinkNode    = nodeManager.createNode(0, 0)
+    # Add an edge
+    edge        = edgeManager.createEdge(sourceNode, sinkNode, 100, 100)
+    for i in range(0, 1000):
+        try:
+            edge.addVehicle()
+        except ValueError as e:
+            break
+    
+    assert edge.isFull
+    assert edge.numCars < 1000
+
+    while edge.isFull:
+        edge.removeVehicle()
+
+    assert edge.isFull == False
+
 @pytest.mark.setup
 def test_simple_djikstras():
     # Create managers
@@ -213,7 +271,7 @@ def test_simple_bidirectional_network():
     minPath, path, edges = nodeManager.determinePath(sourceNode, sinkNode)
     assert minPath == edge1.realTime + edge2.realTime
     
-@pytest.mark.sim
+@pytest.mark.oldsim
 def test_simple_simulation():
     # Create managers
     nodeManager = NodeManager()
@@ -228,7 +286,7 @@ def test_simple_simulation():
     sim.addRandomVehicle()
     sim.startBaselineSimulation()
     
-@pytest.mark.sim
+@pytest.mark.oldsim
 def test_two_step_simulation():
     # Create managers
     nodeManager = NodeManager()
@@ -246,6 +304,7 @@ def test_two_step_simulation():
         sim.addVehicle(sourceNode, sinkNode)
     sim.startBaselineSimulation()
 
+@pytest.mark.oldsim
 def test_network_1():
     greenLength     = 40
     greenSpeed      = 110
@@ -328,3 +387,32 @@ def test_network_1():
     for i in range(0, 1000):
         sim.addVehicle(nodeA, nodeC)
     sim.startBaselineSimulation()
+
+@pytest.mark.sim
+def test_simulation_setup():
+    # Create a simulator
+    sim = Simulator()
+    # Create nodes
+    nodeA = sim.createNode(0, 0)
+    nodeB = sim.createNode(0, 0)
+    nodeC = sim.createNode(0, 0)
+    nodeD = sim.createNode(0, 0)
+    assert len(sim.nodes) == 4
+    # Create edges
+    edgeAB = sim.createEdge(nodeA, nodeB, 100, 100)
+    edgeBC = sim.createEdge(nodeB, nodeC, 100, 100, False)
+    edgeCD = sim.createEdge(nodeC, nodeD, 100, 100)
+    edgeDA = sim.createEdge(nodeD, nodeA, 100, 100, False)
+    assert len(sim.edges) == 2*2 + 2
+    # Add 3 vehicles to each path
+    for startingNode in sim.nodes:
+        for targetNode in sim.nodes:
+            if startingNode != targetNode:
+                for i in range(0, 3):
+                    sim.createVehicle(startingNode, targetNode)
+    assert len(sim.vehicles) == 36
+    # Run the baseline simulation
+    sim.runBaselineSimulation()
+
+
+
