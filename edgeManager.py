@@ -51,11 +51,8 @@ class Edge:
             self.realSpeed = self.maxSpeed
         elif self.d > 1:
             self.realSpeed = self.maxSpeed*(1 - (1/self.d))
-        
-        try:
-            self.realTime = (self.length / self.realSpeed) * 3600
-        except TypeError as e:
-            print(self.length, self.realSpeed, self.d)
+
+        self.realTime = (self.length / self.realSpeed) * 3600
 
     def setCongestion(self):
         self.congestion = self.realTime / self.minTime

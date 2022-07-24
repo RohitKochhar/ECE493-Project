@@ -22,12 +22,15 @@ class Vehicle:
         self.timeLeftOnEdge = INFINITY
 
     def setStartingEdge(self):
-        self.currentEdgeIndex = 0
+        self.currentEdgeIndex   = 0
+        self.travelTimes        = []
         edge = self.pathEdges[0]
         edge.addVehicle()
         self.currentEdge = edge
 
-    def getNextEdge(self):
+    def setNextEdge(self):
+        self.travelTimes.append(self.timeOnEdge)
+        self.timeOnEdge = 0
         self.currentEdgeIndex += 1
         # Check if we are target
         if self.currentEdgeIndex == len(self.pathEdges):
