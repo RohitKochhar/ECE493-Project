@@ -280,7 +280,7 @@ def test_simple_simulation():
     sourceNode  = nodeManager.createNode(0, 0)
     sinkNode    = nodeManager.createNode(0, 0)
     # Add edges
-    edge        = edgeManager.createBidirectionalEdge(sourceNode, sinkNode, 5000, 100)
+    edge        = sim.createEdge(sourceNode, sinkNode, 5000, 100)
     # Create simulator
     sim = Simulator(nodeManager, edgeManager)
     sim.addRandomVehicle()
@@ -296,96 +296,12 @@ def test_two_step_simulation():
     interNode   = nodeManager.createNode(0, 0)
     sinkNode    = nodeManager.createNode(0, 0)
     # Add edges
-    edge01          = edgeManager.createBidirectionalEdge(sourceNode, interNode, 40, 110)
-    edge12          = edgeManager.createBidirectionalEdge(interNode, sinkNode, 40, 110)
+    edge01          = sim.createEdge(sourceNode, interNode, 40, 110)
+    edge12          = sim.createEdge(interNode, sinkNode, 40, 110)
     # Create simulator
     sim = Simulator(nodeManager, edgeManager)
     for i in range(0, 1000):
         sim.addVehicle(sourceNode, sinkNode)
-    sim.startBaselineSimulation()
-
-@pytest.mark.oldsim
-def test_network_1():
-    greenLength     = 40
-    greenSpeed      = 110
-    yellowLength    = 20
-    yellowSpeed     = 80
-    redLength       = 10
-    redSpeed        = 30
-    # Create managers
-    nodeManager = NodeManager()
-    edgeManager = EdgeManager()
-    # Create nodes
-    nodeA       = nodeManager.createNode(0, 0)
-    nodeB       = nodeManager.createNode(0, 0)
-    nodeC       = nodeManager.createNode(0, 0)
-    nodeD       = nodeManager.createNode(0, 0)
-    nodeE       = nodeManager.createNode(0, 0)
-    nodeF       = nodeManager.createNode(0, 0)
-    nodeG       = nodeManager.createNode(0, 0)
-    nodeH       = nodeManager.createNode(0, 0)
-    nodeI       = nodeManager.createNode(0, 0)
-    nodeJ       = nodeManager.createNode(0, 0)
-    nodeK       = nodeManager.createNode(0, 0)
-    nodeL       = nodeManager.createNode(0, 0)
-    nodeM       = nodeManager.createNode(0, 0)
-    nodeN       = nodeManager.createNode(0, 0)
-    nodeO       = nodeManager.createNode(0, 0)
-    nodeP       = nodeManager.createNode(0, 0)
-    # Create edges
-    #   Highway edges
-    edgeAB      = edgeManager.createBidirectionalEdge(nodeA, nodeB, greenLength, greenSpeed)
-    edgeAO      = edgeManager.createBidirectionalEdge(nodeA, nodeO, greenLength, greenSpeed)
-    edgeBP      = edgeManager.createBidirectionalEdge(nodeB, nodeP, greenLength, greenSpeed)
-    edgeOP      = edgeManager.createBidirectionalEdge(nodeO, nodeO, greenLength, greenSpeed)
-    #   Rural edges
-    edgeAD      = edgeManager.createBidirectionalEdge(nodeA, nodeD, yellowLength, yellowSpeed)
-    edgeAH      = edgeManager.createBidirectionalEdge(nodeA, nodeH, yellowLength, yellowSpeed)
-    edgeBD      = edgeManager.createBidirectionalEdge(nodeB, nodeD, yellowLength, yellowSpeed)
-    edgeBK      = edgeManager.createBidirectionalEdge(nodeB, nodeK, yellowLength, yellowSpeed)
-    edgeOH      = edgeManager.createBidirectionalEdge(nodeO, nodeH, yellowLength, yellowSpeed)
-    edgeOM      = edgeManager.createBidirectionalEdge(nodeO, nodeM, yellowLength, yellowSpeed)
-    edgePM      = edgeManager.createBidirectionalEdge(nodeP, nodeM, yellowLength, yellowSpeed)
-    edgePK      = edgeManager.createBidirectionalEdge(nodeP, nodeK, yellowLength, yellowSpeed)
-    #   City edges
-    edgeAC      = edgeManager.createBidirectionalEdge(nodeA, nodeC, redLength, redSpeed)
-    edgeEB      = edgeManager.createBidirectionalEdge(nodeE, nodeB, redLength, redSpeed)
-    edgeNP      = edgeManager.createBidirectionalEdge(nodeN, nodeP, redLength, redSpeed)
-    edgeOL      = edgeManager.createBidirectionalEdge(nodeO, nodeL, redLength, redSpeed)
-
-    edgeCD      = edgeManager.createBidirectionalEdge(nodeC, nodeD, redLength, redSpeed)
-    edgeDE      = edgeManager.createBidirectionalEdge(nodeD, nodeE, redLength, redSpeed)
-    edgeEK      = edgeManager.createBidirectionalEdge(nodeE, nodeK, redLength, redSpeed)
-    edgeKN      = edgeManager.createBidirectionalEdge(nodeK, nodeN, redLength, redSpeed)
-    edgeNM      = edgeManager.createBidirectionalEdge(nodeN, nodeM, redLength, redSpeed)
-    edgeML      = edgeManager.createBidirectionalEdge(nodeM, nodeL, redLength, redSpeed)
-    edgeLH      = edgeManager.createBidirectionalEdge(nodeL, nodeH, redLength, redSpeed)
-    edgeCH      = edgeManager.createBidirectionalEdge(nodeC, nodeH, redLength, redSpeed)
-    
-    edgeCF      = edgeManager.createBidirectionalEdge(nodeC, nodeF, redLength, redSpeed)
-    edgeFD      = edgeManager.createBidirectionalEdge(nodeF, nodeD, redLength, redSpeed)
-    edgeDG      = edgeManager.createBidirectionalEdge(nodeD, nodeG, redLength, redSpeed)
-    edgeGE      = edgeManager.createBidirectionalEdge(nodeG, nodeE, redLength, redSpeed)
-    edgeGK      = edgeManager.createBidirectionalEdge(nodeG, nodeK, redLength, redSpeed)
-    edgeKJ      = edgeManager.createBidirectionalEdge(nodeK, nodeJ, redLength, redSpeed)
-    edgeJN      = edgeManager.createBidirectionalEdge(nodeJ, nodeN, redLength, redSpeed)
-    edgeJM      = edgeManager.createBidirectionalEdge(nodeJ, nodeM, redLength, redSpeed)
-    edgeMI      = edgeManager.createBidirectionalEdge(nodeM, nodeI, redLength, redSpeed)
-    edgeIL      = edgeManager.createBidirectionalEdge(nodeI, nodeL, redLength, redSpeed)
-    edgeIH      = edgeManager.createBidirectionalEdge(nodeI, nodeH, redLength, redSpeed)
-    edgeHF      = edgeManager.createBidirectionalEdge(nodeH, nodeL, redLength, redSpeed)
-
-    edgeFG      = edgeManager.createBidirectionalEdge(nodeF, nodeG, redLength, redSpeed)
-    edgeGJ      = edgeManager.createBidirectionalEdge(nodeG, nodeJ, redLength, redSpeed)
-    edgeJI      = edgeManager.createBidirectionalEdge(nodeJ, nodeI, redLength, redSpeed)
-    edgeIF      = edgeManager.createBidirectionalEdge(nodeI, nodeF, redLength, redSpeed)
-
-    edgeJF      = edgeManager.createBidirectionalEdge(nodeJ, nodeF, redLength, redSpeed)
-    edgeGI      = edgeManager.createBidirectionalEdge(nodeG, nodeI, redLength, redSpeed)
-
-    sim = Simulator(nodeManager, edgeManager)
-    for i in range(0, 1000):
-        sim.addVehicle(nodeA, nodeC)
     sim.startBaselineSimulation()
 
 @pytest.mark.sim
@@ -413,6 +329,98 @@ def test_simulation_setup():
     assert len(sim.vehicles) == 36
     # Run the baseline simulation
     sim.runBaselineSimulation()
+    sim.runOptimizedSimulation()
+    sim.showResults()
+
+@pytest.mark.sim
+def test_network_1():
+    greenLength     = 40
+    greenSpeed      = 110
+    yellowLength    = 20
+    yellowSpeed     = 80
+    redLength       = 10
+    redSpeed        = 30
+    # Create sim
+    sim = Simulator()
+    # Create nodes
+    nodeA       = sim.createNode(0, 0)
+    nodeB       = sim.createNode(0, 0)
+    nodeC       = sim.createNode(0, 0)
+    nodeD       = sim.createNode(0, 0)
+    nodeE       = sim.createNode(0, 0)
+    nodeF       = sim.createNode(0, 0)
+    nodeG       = sim.createNode(0, 0)
+    nodeH       = sim.createNode(0, 0)
+    nodeI       = sim.createNode(0, 0)
+    nodeJ       = sim.createNode(0, 0)
+    nodeK       = sim.createNode(0, 0)
+    nodeL       = sim.createNode(0, 0)
+    nodeM       = sim.createNode(0, 0)
+    nodeN       = sim.createNode(0, 0)
+    nodeO       = sim.createNode(0, 0)
+    nodeP       = sim.createNode(0, 0)
+    # Create edges
+    #   Highway edges
+    edgeAB      = sim.createEdge(nodeA, nodeB, greenLength, greenSpeed)
+    edgeAO      = sim.createEdge(nodeA, nodeO, greenLength, greenSpeed)
+    edgeBP      = sim.createEdge(nodeB, nodeP, greenLength, greenSpeed)
+    edgeOP      = sim.createEdge(nodeO, nodeP, greenLength, greenSpeed)
+    #   Rural edges
+    edgeAD      = sim.createEdge(nodeA, nodeD, yellowLength, yellowSpeed)
+    edgeAH      = sim.createEdge(nodeA, nodeH, yellowLength, yellowSpeed)
+    edgeBD      = sim.createEdge(nodeB, nodeD, yellowLength, yellowSpeed)
+    edgeBK      = sim.createEdge(nodeB, nodeK, yellowLength, yellowSpeed)
+    edgeOH      = sim.createEdge(nodeO, nodeH, yellowLength, yellowSpeed)
+    edgeOM      = sim.createEdge(nodeO, nodeM, yellowLength, yellowSpeed)
+    edgePM      = sim.createEdge(nodeP, nodeM, yellowLength, yellowSpeed)
+    edgePK      = sim.createEdge(nodeP, nodeK, yellowLength, yellowSpeed)
+    #   City edges
+    edgeAC      = sim.createEdge(nodeA, nodeC, redLength, redSpeed)
+    edgeEB      = sim.createEdge(nodeE, nodeB, redLength, redSpeed)
+    edgeNP      = sim.createEdge(nodeN, nodeP, redLength, redSpeed)
+    edgeOL      = sim.createEdge(nodeO, nodeL, redLength, redSpeed)
+
+    edgeCD      = sim.createEdge(nodeC, nodeD, redLength, redSpeed)
+    edgeDE      = sim.createEdge(nodeD, nodeE, redLength, redSpeed)
+    edgeEK      = sim.createEdge(nodeE, nodeK, redLength, redSpeed)
+    edgeKN      = sim.createEdge(nodeK, nodeN, redLength, redSpeed)
+    edgeNM      = sim.createEdge(nodeN, nodeM, redLength, redSpeed)
+    edgeML      = sim.createEdge(nodeM, nodeL, redLength, redSpeed)
+    edgeLH      = sim.createEdge(nodeL, nodeH, redLength, redSpeed)
+    edgeCH      = sim.createEdge(nodeC, nodeH, redLength, redSpeed)
+    
+    edgeCF      = sim.createEdge(nodeC, nodeF, redLength, redSpeed)
+    edgeFD      = sim.createEdge(nodeF, nodeD, redLength, redSpeed)
+    edgeDG      = sim.createEdge(nodeD, nodeG, redLength, redSpeed)
+    edgeGE      = sim.createEdge(nodeG, nodeE, redLength, redSpeed)
+    edgeGK      = sim.createEdge(nodeG, nodeK, redLength, redSpeed)
+    edgeKJ      = sim.createEdge(nodeK, nodeJ, redLength, redSpeed)
+    edgeJN      = sim.createEdge(nodeJ, nodeN, redLength, redSpeed)
+    edgeJM      = sim.createEdge(nodeJ, nodeM, redLength, redSpeed)
+    edgeMI      = sim.createEdge(nodeM, nodeI, redLength, redSpeed)
+    edgeIL      = sim.createEdge(nodeI, nodeL, redLength, redSpeed)
+    edgeIH      = sim.createEdge(nodeI, nodeH, redLength, redSpeed)
+    edgeHF      = sim.createEdge(nodeH, nodeF, redLength, redSpeed)
+
+    edgeFG      = sim.createEdge(nodeF, nodeG, redLength, redSpeed)
+    edgeGJ      = sim.createEdge(nodeG, nodeJ, redLength, redSpeed)
+    edgeJI      = sim.createEdge(nodeJ, nodeI, redLength, redSpeed)
+    edgeIF      = sim.createEdge(nodeI, nodeF, redLength, redSpeed)
+
+    edgeJF      = sim.createEdge(nodeJ, nodeF, redLength, redSpeed)
+    edgeGI      = sim.createEdge(nodeG, nodeI, redLength, redSpeed)
+
+    assert len(sim.edges) == 84
+
+    for startingNode in sim.nodes:
+        for targetNode in sim.nodes:
+            if startingNode != targetNode:
+                for i in range(0, 3):
+                    sim.createVehicle(startingNode, targetNode)
+
+    sim.runBaselineSimulation()
+    sim.runOptimizedSimulation()
+    sim.showResults()
 
 
 

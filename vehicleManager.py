@@ -24,9 +24,9 @@ class Vehicle:
     def setStartingEdge(self):
         self.currentEdgeIndex   = 0
         self.travelTimes        = []
-        edge = self.pathEdges[0]
+        edge                    = self.pathEdges[0]
         edge.addVehicle()
-        self.currentEdge = edge
+        self.currentEdge        = edge
 
     def setNextEdge(self):
         self.travelTimes.append(self.timeOnEdge)
@@ -34,6 +34,7 @@ class Vehicle:
         self.currentEdgeIndex += 1
         # Check if we are target
         if self.currentEdgeIndex == len(self.pathEdges):
+            self.currentEdge.removeVehicle()
             return None
         else:
             self.currentEdge.removeVehicle()
@@ -60,3 +61,4 @@ class VehicleManager:
     def createVehicle(self, startNode, endNode):
         vehicle = Vehicle(startNode, endNode, id=len(self.__vehicles))
         self.__vehicles.append(vehicle)
+        return vehicle
