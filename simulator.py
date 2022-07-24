@@ -21,6 +21,27 @@ from time import sleep
 # Class Declarations ---------------------------------------------
 
 # . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 
+#	Class Name: SimulationResult
+#
+#	Class Description:
+# 
+#	Class History: 
+# 		- 2022-07-24: Created by Rohit S.
+# 
+# . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 
+class SimulationResult:
+    def __init__(self, vehicle):
+        self.id             = vehicle.id
+        self.startNode      = vehicle.startNode
+        self.endNode        = vehicle.endNode
+        self.baselineTime   = vehicle.baselineExpectedTime
+        self.actualTime     = sum([e for e in vehicle.travelTimes])
+        self.percentDelay   = round(self.actualTime / self.baselineTime, 4)
+
+    def __str__(self):
+        return f"Vehicle {self.id} completed trip from {self.startNode} -> {self.endNode} with {self.percentDelay}% delays"
+
+# . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 
 #	Class Name: Simulator
 #
 #	Class Description: 
@@ -93,12 +114,13 @@ class Simulator:
                 # Check if we are done on this edge
                 if travellingVehicle.timeOnEdge >= travellingVehicle.currentEdge.realTime:
                     # If we are, update the edge
-                    nextEdge = travellingVehicle.getNextEdge()
+                    nextEdge = travellingVehicle.setNextEdge()
                     # Check if we are done
                     if nextEdge == None:
                         completeVehicles.append(travellingVehicle)
                         travellingVehicles.remove(travellingVehicle)
-                        print(f"Vehicle completed trip from {travellingVehicle.startNode} -> {travellingVehicle.endNode} in {time - deployedVehicle.deploymentTime}={travellingVehicle.timeOnEdge} instead of expected {travellingVehicle.baselineExpectedTime} ({sum([x.minTime for x in travellingVehicle.pathEdges])})")
+                        res = SimulationResult(travellingVehicle)
+                        print(res)
 
             # Increment time
             time += 1
