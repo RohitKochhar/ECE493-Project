@@ -54,11 +54,13 @@ class Vehicle:
 class VehicleManager:
     def __init__(self):
         self.__vehicles = []
+        self.__currId     = 0
 
     def getVehicles(self):
         return self.__vehicles
 
     def createVehicle(self, startNode, endNode):
-        vehicle = Vehicle(startNode, endNode, id=len(self.__vehicles))
+        vehicle = Vehicle(startNode, endNode, id=self.__currId)
         self.__vehicles.append(vehicle)
+        self.__currId += 1
         return vehicle

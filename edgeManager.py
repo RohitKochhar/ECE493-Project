@@ -28,9 +28,9 @@ class Edge:
     def __init__(self, sourceNode, sinkNode, length=100, maxSpeed=50):
         self.sourceNode = sourceNode
         self.sinkNode   = sinkNode
-        self.length     = length
+        self.length     = length*10
         self.maxSpeed   = maxSpeed
-        self.minTime    = (length / maxSpeed) * 3600
+        self.minTime    = (self.length / maxSpeed) * 3600
         self.numCars    = 0
         self.d          = self.length
         self.realSpeed  = self.setRealSpeed()
@@ -43,7 +43,6 @@ class Edge:
     def setD(self):
         self.d = float((self.length - CAR_LENGTH*self.numCars) / self.numCars)
         if self.d < 1:
-            print(self.d, self.length, self.numCars)
             raise ValueError("Edge is full, cannot add vehicle")
 
     def setRealSpeed(self):
@@ -83,7 +82,7 @@ class Edge:
             self.isFull = False
 
     def __str__(self):
-        return f"edge{self.sourceNode.id}{self.sinkNode.id}"
+        return f"edge{self.sourceNode.id}->{self.sinkNode.id}"
 
     def getEdgeInfo(self):
         return f"Edge information: \n\tCars: {self.numCars}, d: {self.d} \n\tIdeal speed: {self.maxSpeed}, Real speed: {self.realSpeed}\n\tMin time: {self.minTime}, Real time: {self.realTime}\n\tCongestion: {self.congestion}"

@@ -36,22 +36,22 @@ class SimulationResult:
         self.endNode        = vehicle.endNode
 
     def setBaselineData(self, vehicle):
-        self.baselineExpectedTime   = vehicle.baselineExpectedTime
-        self.baselineActualTime     = sum([e for e in vehicle.travelTimes])
+        self.baselineExpectedTime   = sum([e.minTime for e in vehicle.traversedEdges])
+        self.baselineActualTime     = vehicle.finishingTime - vehicle.deploymentTime
         self.baselinePath           = ' -> '.join([str(e) for e in vehicle.pathEdges])
         self.baselinePercentDelay   = round(self.baselineActualTime / self.baselineExpectedTime, 4)
 
     def printBaselineData(self):
-        print(f"Vehicle {self.id} completed trip from {self.startNode} -> {self.endNode} via {self.baselinePath} in {self.baselineActualTime} with {self.baselinePercentDelay}% delays")
+        print(f"Vehicle {self.id} completed trip from {self.startNode} -> {self.endNode} via {self.baselinePath} in {self.baselineActualTime} instead of the expected {self.baselineExpectedTime} with {self.baselinePercentDelay}% delays")
 
     def setOptimizedData(self, vehicle):
-        self.optimizedExpectedTime   = vehicle.optimizedExpectedTime
-        self.optimizedActualTime     = sum([e for e in vehicle.travelTimes])
+        self.optimizedExpectedTime   = sum([e.minTime for e in vehicle.traversedEdges])
+        self.optimizedActualTime     = vehicle.finishingTime - vehicle.deploymentTime
         self.optimizedPath           = ' -> '.join([str(e) for e in vehicle.pathEdges])
         self.optimizedPercentDelay   = round(self.optimizedActualTime / self.optimizedExpectedTime, 4)
 
     def printOptimizedData(self):
-        print(f"Vehicle {self.id} completed trip from {self.startNode} -> {self.endNode} via {self.optimizedPath} in {self.optimizedActualTime} with {self.optimizedPercentDelay}% delays")
+        print(f"Vehicle {self.id} completed trip from {self.startNode} -> {self.endNode} via {self.optimizedPath} in {self.optimizedActualTime} instead of the expected {self.optimizedExpectedTime} with {self.optimizedPercentDelay}% delays")
 
     
 
@@ -65,6 +65,7 @@ class SimulationResultManager:
     def addRecord(self, vehicle):
         record = SimulationResult(vehicle)
         self.__results.append(record)
+        return record
 
 # . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 
 #	Class Name: Simulator
@@ -89,6 +90,12 @@ class Simulator:
         self.vehicles   = self.__vehicleManager.getVehicles()
         self.results    = self.__resultsManager.getResults()
 
+    def __del__(self):
+        del(self.__nodeManager)
+        del(self.__edgeManager)
+        del(self.__vehicleManager)
+        del(self.__resultsManager)
+
     def createNode(self, lat=0, long=0):
         return self.__nodeManager.createNode(lat, long)
 
@@ -100,13 +107,19 @@ class Simulator:
 
     def createVehicle(self, sourceNode, targetNode):
         vehicle = self.__vehicleManager.createVehicle(sourceNode, targetNode)
-        self.__resultsManager.addRecord(vehicle)
+        rec = self.__resultsManager.addRecord(vehicle)
+        assert rec.id == vehicle.id
         return vehicle
 
     def getRecordByID(self, id):
+        foundRec = None
         for rec in self.results:
             if rec.id == id:
-                return rec
+                foundRec = rec
+        if foundRec == None:
+            raise ValueError(f"Couldn't find a record for vehicle {id}")
+        else:
+            return foundRec
 
     def runBaselineSimulation(self):
         # Create a copy of the waiting vehicles
@@ -122,7 +135,7 @@ class Simulator:
             # Check if we have vehicles waiting to start travelling
             if len(waitingVehicles) != 0:
                 # We only deploy vehicles every ten seconds
-                if time % 10 == 0:
+                if time % 300 == 0:
                     # Randomly select a vehicle from the list
                     deployedVehicle                     = waitingVehicles[randint(0, len(waitingVehicles) - 1)]
                     # Run baseline path finding
@@ -131,29 +144,41 @@ class Simulator:
                     deployedVehicle.baselineExpectedTime    = baselinePathResults[0]
                     deployedVehicle.pathNodes               = baselinePathResults[1]
                     deployedVehicle.pathEdges               = baselinePathResults[2]
-                    # Add the vehicle to the first edge in baselinePathEdges
-                    deployedVehicle.setStartingEdge()
-                    # Initialize the time spent on the edge
-                    deployedVehicle.timeOnEdge = 0
-                    deployedVehicle.deploymentTime = time
-                    # Remove the deployed vehicle from waiting
-                    waitingVehicles.remove(deployedVehicle)
-                    # Add the deployed vehicle to travelling
-                    travellingVehicles.append(deployedVehicle)
+                    if len(deployedVehicle.pathEdges) == 0 or (deployedVehicle.pathEdges[0].isFull):
+                        pass
+                    else:
+                        deployedVehicle.traversedEdges        = []
+                        deployedVehicle.traversedNodes        = []
+                        # Add the vehicle to the first edge in baselinePathEdges
+                        deployedVehicle.setStartingEdge()
+                        # Initialize the time spent on the edge
+                        deployedVehicle.timeOnEdge = 0
+                        deployedVehicle.deploymentTime = time
+                        # Remove the deployed vehicle from waiting
+                        waitingVehicles.remove(deployedVehicle)
+                        # Add the deployed vehicle to travelling
+                        travellingVehicles.append(deployedVehicle)
 
             # Each travelling vehicle has to move one additional time step
             for travellingVehicle in travellingVehicles:
                 travellingVehicle.timeOnEdge += 1
                 # Check if we are done on this edge
                 if travellingVehicle.timeOnEdge >= travellingVehicle.currentEdge.realTime:
-                    # If we are, update the edge
-                    nextEdge = travellingVehicle.setNextEdge()
-                    # Check if we are done
-                    if nextEdge == None:
+                    # Saved the traversed edges and nodes
+                    travellingVehicle.traversedEdges.append(travellingVehicle.currentEdge)
+                    travellingVehicle.traversedNodes.append(travellingVehicle.currentEdge.sinkNode)
+                    if travellingVehicle.currentEdge.sinkNode == travellingVehicle.endNode:
+                        travellingVehicle.finishingTime = time + 1
                         completeVehicles.append(travellingVehicle)
                         travellingVehicles.remove(travellingVehicle)
                         record = self.getRecordByID(travellingVehicle.id)
                         record.setBaselineData(travellingVehicle)
+                    else:
+                        baselinePathResults = self.__nodeManager.determinePath(travellingVehicle.currentEdge.sinkNode, travellingVehicle.endNode, isBaseline=True)
+                        travellingVehicle.baselineExpectedTime    = baselinePathResults[0]
+                        travellingVehicle.pathNodes               = travellingVehicle.traversedNodes + baselinePathResults[1]
+                        travellingVehicle.pathEdges               = travellingVehicle.traversedEdges + baselinePathResults[2]
+                        nextEdge = travellingVehicle.setNextEdge()
 
             # Increment time
             time += 1
@@ -173,41 +198,54 @@ class Simulator:
         time = 0
         # Simulation completes until all vehicles are complete
         while (len(waitingVehicles) >= 0) and (len(completeVehicles) < len(self.vehicles)):
+            print(len(waitingVehicles), len(travellingVehicles), len(completeVehicles))
             # Check if we have vehicles waiting to start travelling
             if len(waitingVehicles) != 0:
                 # We only deploy vehicles every ten seconds
                 if time % 10 == 0:
                     # Randomly select a vehicle from the list
                     deployedVehicle                     = waitingVehicles[randint(0, len(waitingVehicles) - 1)]
-                    # Run baseline path finding
+                    # Run optimal path finding
                     optimizedPathResults = self.__nodeManager.determinePath(deployedVehicle.startNode, deployedVehicle.endNode, isBaseline=False)
                     # Store results
                     deployedVehicle.optimizedExpectedTime       = optimizedPathResults[0]
                     deployedVehicle.pathNodes                   = optimizedPathResults[1]
                     deployedVehicle.pathEdges                   = optimizedPathResults[2]
-                    # Add the vehicle to the first edge in baselinePathEdges
-                    deployedVehicle.setStartingEdge()
-                    # Initialize the time spent on the edge
-                    deployedVehicle.timeOnEdge = 0
-                    deployedVehicle.deploymentTime = time
-                    # Remove the deployed vehicle from waiting
-                    waitingVehicles.remove(deployedVehicle)
-                    # Add the deployed vehicle to travelling
-                    travellingVehicles.append(deployedVehicle)
+                    if len(deployedVehicle.pathEdges) == 0 or (deployedVehicle.pathEdges[0].isFull):
+                        pass
+                    else:
+                        deployedVehicle.traversedEdges        = []
+                        deployedVehicle.traversedNodes        = []
+                        # Add the vehicle to the first edge in baselinePathEdges
+                        deployedVehicle.setStartingEdge()
+                        # Initialize the time spent on the edge
+                        deployedVehicle.timeOnEdge = 0
+                        deployedVehicle.deploymentTime = time
+                        # Remove the deployed vehicle from waiting
+                        waitingVehicles.remove(deployedVehicle)
+                        # Add the deployed vehicle to travelling
+                        travellingVehicles.append(deployedVehicle)
 
             # Each travelling vehicle has to move one additional time step
             for travellingVehicle in travellingVehicles:
                 travellingVehicle.timeOnEdge += 1
                 # Check if we are done on this edge
                 if travellingVehicle.timeOnEdge >= travellingVehicle.currentEdge.realTime:
-                    # If we are, update the edge
-                    nextEdge = travellingVehicle.setNextEdge()
-                    # Check if we are done
-                    if nextEdge == None:
+                    # Saved the traversed edges and nodes
+                    travellingVehicle.traversedEdges.append(travellingVehicle.currentEdge)
+                    travellingVehicle.traversedNodes.append(travellingVehicle.currentEdge.sinkNode)
+                    if travellingVehicle.currentEdge.sinkNode == travellingVehicle.endNode:
+                        travellingVehicle.finishingTime = time + 1
                         completeVehicles.append(travellingVehicle)
                         travellingVehicles.remove(travellingVehicle)
                         record = self.getRecordByID(travellingVehicle.id)
                         record.setOptimizedData(travellingVehicle)
+                    else:
+                        optimizedPathResults = self.__nodeManager.determinePath(travellingVehicle.currentEdge.sinkNode, travellingVehicle.endNode, isBaseline=True)
+                        travellingVehicle.optimizedExpectedTime     = optimizedPathResults[0]
+                        travellingVehicle.pathNodes                 = travellingVehicle.traversedNodes + optimizedPathResults[1]
+                        travellingVehicle.pathEdges                 = travellingVehicle.traversedEdges + optimizedPathResults[2]
+                        nextEdge = travellingVehicle.setNextEdge()
 
             # Increment time
             time += 1

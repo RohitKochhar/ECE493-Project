@@ -96,14 +96,20 @@ class NodeManager:
                         # Check that the neighbour hasn't been visited
                         if neighbour in self.__nodes:
                             # Check if a shorter path exists
-                            if edge.realTime + current.tentativeDistance <= neighbour.tentativeDistance:
-                                if isBaseline:
+                            if edge.isFull:
+                                edge.minTime = INFINITY
+                                edge.realTime = INFINITY
+                            if isBaseline:
+                                if (edge.minTime + current.tentativeDistance <= neighbour.tentativeDistance):
                                     # In baseline simulations, decisions are made based on minTime
                                     neighbour.tentativeDistance = edge.minTime + current.tentativeDistance
-                                else:
-                                    # In non-baseline simulations, decisions are made based on realTime
+                                    neighbour.prev = current
+                            else:
+                                if (edge.realTime + current.tentativeDistance <= neighbour.tentativeDistance):
                                     neighbour.tentativeDistance = edge.realTime + current.tentativeDistance
-                                neighbour.prev = current
+                                    neighbour.prev = current
+                            
+                            
                 
                 current.isVisited = True
 

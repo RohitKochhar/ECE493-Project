@@ -10,6 +10,7 @@
 # . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 
 
 # Imports --------------------------------------------------------
+from random import randint
 import pytest
 from nodeManager import NodeManager
 from simulator import Simulator
@@ -332,6 +333,9 @@ def test_simulation_setup():
     sim.runOptimizedSimulation()
     sim.showResults()
 
+    # Clean up
+    del sim
+
 @pytest.mark.sim
 def test_network_1():
     greenLength     = 40
@@ -410,17 +414,18 @@ def test_network_1():
     edgeJF      = sim.createEdge(nodeJ, nodeF, redLength, redSpeed)
     edgeGI      = sim.createEdge(nodeG, nodeI, redLength, redSpeed)
 
-    assert len(sim.edges) == 84
-
-    for startingNode in sim.nodes:
-        for targetNode in sim.nodes:
-            if startingNode != targetNode:
-                for i in range(0, 3):
-                    sim.createVehicle(startingNode, targetNode)
-
+    for i in range(0, 100):
+        node1 = sim.nodes[randint(0, len(sim.nodes) - 1)]
+        node2 = sim.nodes[randint(0, len(sim.nodes) - 1)]
+        if node1 != node2:
+            sim.createVehicle(node1, node2)
+        
     sim.runBaselineSimulation()
     sim.runOptimizedSimulation()
     sim.showResults()
+
+    # Clean up
+    del sim
 
 
 
