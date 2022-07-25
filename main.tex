@@ -28,6 +28,8 @@ vbojcev@uwaterloo.ca}
 }
 
 \maketitle
+\thispagestyle{plain}
+\pagestyle{plain}
 
 \begin{abstract}
 This document is a model and instructions for \LaTeX.
@@ -41,16 +43,18 @@ With the population of city centres rapidly increasing, the number of vehicles o
 
 While autonomous vehicles (AVs) propose a solution to the causes of traffic due to human-error, the larger issue comes from the non-dynamic implementation of traffic control systems such as stop lights. Theses systems can be seen as stateful controls that switch state to route traffic in a certain way. Despite the fact that the state of a given traffic light directly affects the traffic at another, these systems are largely isolated and do not typically communicate with each other. Because of this, traffic in one direction can become highly backed up while opposing traffic moves freely. 
 
-In this work, we aim to propose a novel solution that transforms traditional traffic networks into dynamic sensor networks that communicate traffic flow information to autonomous vehicles within the network. Our proposed solution would allow traffic lights to act as communicating beacons, relaying information to the path planning systems of autonomous vehicles to allow them to adopt the ideal route to reach their target destination.
+In this work, we aim to propose a novel solution that transforms traditional traffic networks into dynamic sensor networks that communicate traffic flow information to autonomous vehicles within the network. Our proposed solution would allow traffic lights to act as communicating beacons, relaying information about real-time traffic flow to the path planning systems of autonomous vehicles to allow them to adopt the ideal route to reach their target destination.
 
 \section{Literature Review}
 \section{Experiment Methodology}
+
+
 
 \subsection{Modelling of Transport Networks}\label{sec:modelling}
 
 For our experiment, we need to create a model that can represent traffic flow between intersections. To accomplish this, we use a directed graph with intersections represented by nodes and traffic flow parameters representing the weights of connecting edges. Edges between nodes are uni-directional, which allows for one-way traffic flow to be modelled by a single edge or two-way traffic flow to be modelled by two edges. Each edge has an associated \textit{source} node (node from which traffic flows) and an associated \textit{sink} node (node to which traffic flows). The nodes serve as beacon points to communicate traffic data collected by the edges across the network to the AVs passing through each intersection.
 
-\subsubsection{Traffic Flow (Edge) Modelling}\label{sec:edge}
+\subsection{Traffic Flow (Edge) Modelling}\label{sec:edge}
 
 In the modelling of the edges of our graph, we must characterize edges with relevant parameters that impact traffic flow. Therefore, we load the edges with the following information:
 
@@ -112,10 +116,80 @@ Notice that in this system, our nodes are responsible for the computation of the
 
 Since we must communicate the locations of the nodes to the autonomous vehicle, each node must store a record of its latitude and longitude. This allows the target location to be communicated in a way that can be interpreted by the majority of path-planning systems used for AVs \cite{pathplanning}.
 
-The method by which the node determines the optimized route is by running Djikstra's algorithm to determine the shortest path in terms of time between the current node and the target node communicated by the AV.
+The method by which the node determines the optimized route is by running Djikstra's algorithm \cite{clrs} to determine the shortest path in terms of the real time measurement between the current node and the target node communicated by the AV. This implementation of Djikstra's algorithm is outlined in algorithm \ref{code:djikstras}. 
+
+\begin{algorithm}
+	\caption{Path of Minimum Travel Time Using Djikstra's}\label{code:djikstras}
+	\begin{algorithmic}[1]
+	    \State TODO: Fill this out
+	\end{algorithmic} 
+\end{algorithm}
+
+\subsection{Discrete Event Simulator Implementation}
+
+Now that our graph definitions are complete, we must implement a way to model the behavior of the AVs when they are travelling along an edge. To do this, a \textit{discrete event simulator} (DES) is implemented. The DES serves as the clock of the entire simulation environment, maintaining a global reference time across all nodes, edges and vehicles. Since our edges are defined by speed, length, and travel time, we can mathematically define the average speed of any vehicle along a given edge at a given moment. From this calculation, we are able to determine the amount of time left before the vehicle completes a trip along the given edge and begins a trip across another. 
+
+The simulator is given a topological graph $G$ from the definition of various nodes and their connecting edges. The speed limit and distance of each edge is declared at edge creation, from which the remaining parameters outlined in section \ref{sec:edge} are derived. Once the network is defined, AVs must be added to the edges to model congestion and traffic flow. This is done by either creating a number of vehicles, $N$ with declared or randomly assigned start and end nodes, and adding them to a collection of \textit{waiting} vehicles, $W$. Once the simulation starts, these vehicles are gradually added into the system by random selection, moving them from the \textit{waiting} collection to the \textit{travelling} collection $T$, and their \textit{baseline path} is computed using Djikstra's algorithm with the minimizing edge weight being \textit{minimum travel time}. This baseline path simulates routing uninformed by traffic flow, and serves as the ground truth for which the efficiency of our model is compared against. Once each AV is deployed into the graph, they travel along every edge in their path, with their trip progress tracked by the global reference time $t$ maintained by the simulator. Once the vehicles have traversed all the edges in their route, we determine that they have reached their target node and they are added to the \textit{completed} collection, $C$. Once all vehicles are added to the completed collection the ground truth results are collected. This process is outlined in the pseudo-code function shown in algorithm \ref{code:baselineSimulation}
+
+\begin{algorithm}
+	\caption{Baseline Simulation}\label{code:baselineSimulation}
+	\begin{algorithmic}[1]
+	    \State $G \gets \text{Nodes}, \text{Edges}$
+	    \State $W \gets \text{addVehicles}(N)$
+	    \State $T \gets \text{[ ]}$
+	    \State $C \gets \text{[ ]}$
+	    \While{$\text{len}(W) \ne 0 \text{ and } \text{len}(C) \ne \text{N}$}
+	        \If{$\text{len}(W) \ne 0$}
+	            \If{$t \mod 10 = 0$}
+	                \State $v$ = random($W$)
+	                \State getBaselinePathInfo($v$)
+	                \State $W$.remove($v$)
+	                \State $T \gets v$
+	            \EndIf
+	        \EndIf
+	        \For{$v \in T$}
+	            \If{$v$ is done on current edge}
+	                \If{$v$ has traversed path}
+	                    \State $C \gets v$
+	                    \State $T$.remove($v$)
+	                \Else
+	                    \State setNextEdge($v$)
+	                \EndIf
+	            \EndIf
+	        \EndFor
+	       \State $t = t + 1$
+	    \EndWhile
+	\end{algorithmic} 
+\end{algorithm}
+
+\subsection{Experimental Network}
+
+To validate the performance of our models in simulations that closely resemble the real world. To accurately simulate the behavior of our model in various situations, we have designed multiple graphs to simulate different types of traffic networks found in the real world.
+
+\subsubsection{General Performance}
+
+First, the graph designed in figure \ref{fig:testNetwork} was implemented to test our model's performance in a general network comprised of a variety of roads.
+
+\begin{figure}
+    \centering
+    \includegraphics[scale=0.20]{captures/testNetwork.png}
+    \caption{Caption}
+    \label{fig:testNetwork}
+\end{figure}
+
+This network was designed to validate the general performance of our models across three main types of roads making up typical traffic networks:
+
+\begin{enumerate}
+    \item \textbf{Highway Roads}: These roads are represented by the green edges in our graph. They are characterized by their high speeds and long distances, with each edge of this type having $L = 40$km and $v = 110$ kph.
+    \item \textbf{Rural Roads}: These roads are represented by the yellow edges in our graph. They are characterized by their medium-high speeds and long distances, with each edge of this type having $L = 20$km and $v = 80$kph.
+    \item \textbf{City Roads}: These roads are represented by the red edges in our graph. They are characterized by their low speeds and short distances with many connecting nodes. Each edge of this type has $L = 10$km and $v = 30$kph.
+\end{enumerate}
+
+These three types of edges have varying degrees of susceptibility to congestion. Highway roads are designed to prevent congestion, as they have no intersections across their length, instead opting for on-ramps and off-ramps as traffic exchanges. This, in theory, creates a road in which traffic flow remains high and traffic is not an issue. However, this results in a large amount of traffic occupying these roads, resulting in heavy volumes of vehicles condensed together. This results in the \textit{concertina effect} discussed in section \ref{sec:edge}, causing braking delays to propagate through chains of vehicles close to one another resulting in a slow-down along the edge, as modelled by equation \ref{eq:v-real}. Rural roads often consist of longer stretches of medium speed roads with minimal intersections, and depending on the volume of traffic, can be viable alternatives to highway roads. Finally, city roads are highly prone to congestion, and typically contain a large amount of intersections controlled by traffic lights that result in significant slow-downs.
+
+For the baseline, unoptimized result, we assume the cars are first routed by the minimum path determined by ideal travel time, which is the travel time assuming that there is no congestion and optimum travel flow. Initially, this will result in ideal traffic flow, but as a large volume of vehicles plan their paths this way, there will be a large build up of congestion along the paths with the ideal minimum time, causing congestion and slow-downs. 
 
 \section{Experimental Results}
-
 
 \printbibliography
 \end{document}
