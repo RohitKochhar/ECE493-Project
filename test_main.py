@@ -345,8 +345,10 @@ def test_network_1():
     redLength       = 10
     redSpeed        = 30
     # Create sim
+    print(f"Starting Simulation...")
     sim = Simulator()
     # Create nodes
+    print(f"Creating nodes...")
     nodeA       = sim.createNode(0, 0)
     nodeB       = sim.createNode(0, 0)
     nodeC       = sim.createNode(0, 0)
@@ -363,8 +365,10 @@ def test_network_1():
     nodeN       = sim.createNode(0, 0)
     nodeO       = sim.createNode(0, 0)
     nodeP       = sim.createNode(0, 0)
+    print(f"\tCreated edges")
     # Create edges
     #   Highway edges
+    print(f"Creating edges...")
     edgeAB      = sim.createEdge(nodeA, nodeB, greenLength, greenSpeed)
     edgeAO      = sim.createEdge(nodeA, nodeO, greenLength, greenSpeed)
     edgeBP      = sim.createEdge(nodeB, nodeP, greenLength, greenSpeed)
@@ -413,16 +417,24 @@ def test_network_1():
 
     edgeJF      = sim.createEdge(nodeJ, nodeF, redLength, redSpeed)
     edgeGI      = sim.createEdge(nodeG, nodeI, redLength, redSpeed)
-
-    for i in range(0, 100):
+    print(f"\tCreated Edges")
+    print(f"Adding vehicles to simulation...")
+    for i in range(0, 450):
         node1 = sim.nodes[randint(0, len(sim.nodes) - 1)]
         node2 = sim.nodes[randint(0, len(sim.nodes) - 1)]
-        if node1 != node2:
-            sim.createVehicle(node1, node2)
-        
+        while node1 == node2:
+            node2 = sim.nodes[randint(0, len(sim.nodes) - 1)]
+        sim.createVehicle(node1, node2)
+    print(f"\tVehicles added to simulation.")
+
+    print(f"Running Baseline Simulation")
     sim.runBaselineSimulation()
+    print(f"\tBaseline Simulation complete")
+    print(f"Running Optimized Simulation")
     sim.runOptimizedSimulation()
+    print(f"\tOptimized Simulation complete")
     sim.showResults()
+    sim.exportResults()
 
     # Clean up
     del sim

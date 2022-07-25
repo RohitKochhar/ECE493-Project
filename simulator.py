@@ -16,7 +16,7 @@ from random import randint
 from time import sleep
 
 # Global Variables -----------------------------------------------
-
+TIME_FACTOR = 100
 
 # Class Declarations ---------------------------------------------
 
@@ -39,7 +39,7 @@ class SimulationResult:
         self.baselineExpectedTime   = sum([e.minTime for e in vehicle.traversedEdges])
         self.baselineActualTime     = vehicle.finishingTime - vehicle.deploymentTime
         self.baselinePath           = ' -> '.join([str(e) for e in vehicle.pathEdges])
-        self.baselinePercentDelay   = round(self.baselineActualTime / self.baselineExpectedTime, 4)
+        self.baselinePercentDelay   = round((self.baselineActualTime / self.baselineExpectedTime)*100 - 100, 4)
 
     def printBaselineData(self):
         print(f"Vehicle {self.id} completed trip from {self.startNode} -> {self.endNode} via {self.baselinePath} in {self.baselineActualTime} instead of the expected {self.baselineExpectedTime} with {self.baselinePercentDelay}% delays")
@@ -47,11 +47,31 @@ class SimulationResult:
     def setOptimizedData(self, vehicle):
         self.optimizedExpectedTime   = sum([e.minTime for e in vehicle.traversedEdges])
         self.optimizedActualTime     = vehicle.finishingTime - vehicle.deploymentTime
+        self.baselineRealTime        = sum([e.realTime for e in vehicle.baseLinePath])
         self.optimizedPath           = ' -> '.join([str(e) for e in vehicle.pathEdges])
-        self.optimizedPercentDelay   = round(self.optimizedActualTime / self.optimizedExpectedTime, 4)
+        self.optimizedPercentDelay   = round((self.optimizedActualTime / self.optimizedExpectedTime)*100 - 100, 4)
 
     def printOptimizedData(self):
-        print(f"Vehicle {self.id} completed trip from {self.startNode} -> {self.endNode} via {self.optimizedPath} in {self.optimizedActualTime} instead of the expected {self.optimizedExpectedTime} with {self.optimizedPercentDelay}% delays")
+        print(f"Vehicle {self.id} completed trip from {self.startNode} -> {self.endNode} via {self.optimizedPath} in {self.optimizedActualTime} instead of the expected {self.baselineRealTime} with {self.optimizedPercentDelay}% delays")
+
+    def exportData(self, metrics, filename='test.csv'):
+        metrics['numSimulations'] += 1
+        if self.baselinePath != self.optimizedPath:
+            self.isOptimized = True
+            metrics['numOptimizations'] += 1
+            self.isSuccess = (self.baselineRealTime > self.optimizedExpectedTime)
+            if self.isSuccess:
+                metrics['numSuccesses'] += 1
+            self.isFailure = (self.baselineRealTime < self.optimizedExpectedTime - 5)
+            if self.isFailure:
+                metrics['numFailures'] += 1
+        else:
+            self.isOptimized = False
+            self.isSuccess   = None
+
+        if self.isOptimized and self.isFailure:
+            print(self.id, self.isOptimized, self.baselineActualTime, self.baselineExpectedTime, self.baselineRealTime, self.optimizedActualTime, self.optimizedExpectedTime, self.isSuccess)
+
 
     
 
@@ -135,14 +155,15 @@ class Simulator:
             # Check if we have vehicles waiting to start travelling
             if len(waitingVehicles) != 0:
                 # We only deploy vehicles every ten seconds
-                if time % 300 == 0:
+                if time*TIME_FACTOR % 300 == 0:
                     # Randomly select a vehicle from the list
-                    deployedVehicle                     = waitingVehicles[randint(0, len(waitingVehicles) - 1)]
+                    deployedVehicle                     = waitingVehicles[len(waitingVehicles) - 1]
                     # Run baseline path finding
                     baselinePathResults = self.__nodeManager.determinePath(deployedVehicle.startNode, deployedVehicle.endNode, isBaseline=True)
                     # Store results
                     deployedVehicle.baselineExpectedTime    = baselinePathResults[0]
                     deployedVehicle.pathNodes               = baselinePathResults[1]
+                    deployedVehicle.baseLinePath            = baselinePathResults[2]
                     deployedVehicle.pathEdges               = baselinePathResults[2]
                     if len(deployedVehicle.pathEdges) == 0 or (deployedVehicle.pathEdges[0].isFull):
                         pass
@@ -161,7 +182,7 @@ class Simulator:
 
             # Each travelling vehicle has to move one additional time step
             for travellingVehicle in travellingVehicles:
-                travellingVehicle.timeOnEdge += 1
+                travellingVehicle.timeOnEdge += 1*TIME_FACTOR
                 # Check if we are done on this edge
                 if travellingVehicle.timeOnEdge >= travellingVehicle.currentEdge.realTime:
                     # Saved the traversed edges and nodes
@@ -181,7 +202,7 @@ class Simulator:
                         nextEdge = travellingVehicle.setNextEdge()
 
             # Increment time
-            time += 1
+            time += 1*TIME_FACTOR
 
         # Clean up
         for edge in self.edges:
@@ -202,9 +223,9 @@ class Simulator:
             # Check if we have vehicles waiting to start travelling
             if len(waitingVehicles) != 0:
                 # We only deploy vehicles every ten seconds
-                if time % 10 == 0:
+                if time*TIME_FACTOR % 300 == 0:
                     # Randomly select a vehicle from the list
-                    deployedVehicle                     = waitingVehicles[randint(0, len(waitingVehicles) - 1)]
+                    deployedVehicle                     = waitingVehicles[len(waitingVehicles) - 1]
                     # Run optimal path finding
                     optimizedPathResults = self.__nodeManager.determinePath(deployedVehicle.startNode, deployedVehicle.endNode, isBaseline=False)
                     # Store results
@@ -228,7 +249,7 @@ class Simulator:
 
             # Each travelling vehicle has to move one additional time step
             for travellingVehicle in travellingVehicles:
-                travellingVehicle.timeOnEdge += 1
+                travellingVehicle.timeOnEdge += 1*TIME_FACTOR
                 # Check if we are done on this edge
                 if travellingVehicle.timeOnEdge >= travellingVehicle.currentEdge.realTime:
                     # Saved the traversed edges and nodes
@@ -241,14 +262,14 @@ class Simulator:
                         record = self.getRecordByID(travellingVehicle.id)
                         record.setOptimizedData(travellingVehicle)
                     else:
-                        optimizedPathResults = self.__nodeManager.determinePath(travellingVehicle.currentEdge.sinkNode, travellingVehicle.endNode, isBaseline=True)
+                        optimizedPathResults = self.__nodeManager.determinePath(travellingVehicle.currentEdge.sinkNode, travellingVehicle.endNode, isBaseline=False)
                         travellingVehicle.optimizedExpectedTime     = optimizedPathResults[0]
                         travellingVehicle.pathNodes                 = travellingVehicle.traversedNodes + optimizedPathResults[1]
                         travellingVehicle.pathEdges                 = travellingVehicle.traversedEdges + optimizedPathResults[2]
                         nextEdge = travellingVehicle.setNextEdge()
 
             # Increment time
-            time += 1
+            time += 1*TIME_FACTOR
 
         # Clean up
         for edge in self.edges:
@@ -259,3 +280,15 @@ class Simulator:
             result.printBaselineData()
             result.printOptimizedData()
             print("")
+
+    def exportResults(self):
+        self.metrics = {
+            "numSimulations": 0,
+            "numOptimizations": 0,
+            "numSuccesses": 0,
+            "numFailures": 0,
+        }
+        for result in self.results:
+            result.exportData(self.metrics)
+
+        print(self.metrics)
