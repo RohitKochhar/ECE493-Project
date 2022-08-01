@@ -9,11 +9,15 @@
 # . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 
 
 # Imports --------------------------------------------------------
+from cProfile import label
+
+from numpy import average
 from vehicleManager import Vehicle, VehicleManager
 from edgeManager import EdgeManager
 from nodeManager import NodeManager
 from random import randint
 from time import sleep
+import matplotlib.pyplot as plt
 
 # Global Variables -----------------------------------------------
 TIME_FACTOR = 100
@@ -54,15 +58,16 @@ class SimulationResult:
     def printOptimizedData(self):
         print(f"Vehicle {self.id} completed trip from {self.startNode} -> {self.endNode} via {self.optimizedPath} in {self.optimizedActualTime} instead of the expected {self.baselineRealTime} with {self.optimizedPercentDelay}% delays")
 
-    def exportData(self, metrics, filename='test.csv'):
+    def exportData(self, metrics, optimizations, filename='test.csv'):
         metrics['numSimulations'] += 1
         if self.baselinePath != self.optimizedPath:
             self.isOptimized = True
             metrics['numOptimizations'] += 1
-            self.isSuccess = (self.baselineRealTime > self.optimizedExpectedTime)
+            self.isSuccess = (self.baselineRealTime > self.optimizedActualTime)
             if self.isSuccess:
                 metrics['numSuccesses'] += 1
-            self.isFailure = (self.baselineRealTime < self.optimizedExpectedTime - 5)
+                optimizations.append(self)
+            self.isFailure = (self.baselineRealTime < self.optimizedActualTime - 5)
             if self.isFailure:
                 metrics['numFailures'] += 1
         else:
@@ -282,13 +287,35 @@ class Simulator:
             print("")
 
     def exportResults(self):
+        self.optimizations = []
         self.metrics = {
             "numSimulations": 0,
             "numOptimizations": 0,
             "numSuccesses": 0,
             "numFailures": 0,
         }
+
         for result in self.results:
-            result.exportData(self.metrics)
+            result.exportData(self.metrics, self.optimizations)
 
         print(self.metrics)
+
+        for optim in self.optimizations:
+            if optim.baselineActualTime < optim.optimizedActualTime:
+                self.optimizations.remove(optim)
+            print(optim.baselineActualTime, optim.optimizedActualTime)
+
+        plt.plot([x.baselineActualTime for x in self.optimizations], label='Baseline Time')
+        plt.plot([x.optimizedActualTime for x in self.optimizations], label='Optimized Time')
+        plt.title('Baseline vs. Optimized Travel Times')
+        plt.xlabel('ID of Optimized Vehicle')
+        plt.ylabel('Time (s)')
+        plt.legend()
+        plt.show()
+
+        plt.plot([((x.baselineActualTime - x.optimizedActualTime) / x.baselineActualTime)*100 for x in self.optimizations], label=f'Routing Improvement (avg: {round(average([((x.baselineActualTime - x.optimizedActualTime) / x.baselineActualTime)*100 for x in self.optimizations]), 2)})')
+        plt.title('Routing Improvements')
+        plt.xlabel('ID of Optimized Vehicle')
+        plt.ylabel('Baseline Time Decrease (%)')
+        plt.legend()
+        plt.show()

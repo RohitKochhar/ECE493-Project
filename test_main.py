@@ -337,6 +337,94 @@ def test_simulation_setup():
     del sim
 
 @pytest.mark.sim
+def test_network_2():
+    length       = 10
+    speed        = 30
+    # Create sim
+    print(f"Starting Simulation...")
+    sim = Simulator()
+    # Create nodes
+    print(f"Creating nodes...")
+    nodeA       = sim.createNode(0, 0)
+    nodeB       = sim.createNode(0, 0)
+    nodeC       = sim.createNode(0, 0)
+    nodeD       = sim.createNode(0, 0)
+    nodeE       = sim.createNode(0, 0)
+    nodeF       = sim.createNode(0, 0)
+    nodeG       = sim.createNode(0, 0)
+    nodeH       = sim.createNode(0, 0)
+    nodeI       = sim.createNode(0, 0)
+    nodeJ       = sim.createNode(0, 0)
+    nodeK       = sim.createNode(0, 0)
+    nodeL       = sim.createNode(0, 0)
+    nodeM       = sim.createNode(0, 0)
+    nodeN       = sim.createNode(0, 0)
+    nodeO       = sim.createNode(0, 0)
+    nodeP       = sim.createNode(0, 0)
+    print(f"\tCreated nodes")
+    print(f"Creating edges...")
+    # Create edges
+    #   Outer edges
+    edgeAB      = sim.createEdge(nodeA, nodeB, length, speed)
+    edgeBC      = sim.createEdge(nodeB, nodeC, length, speed)
+    edgeCD      = sim.createEdge(nodeC, nodeD, length, speed)
+
+    edgeDH      = sim.createEdge(nodeD, nodeH, length, speed)
+    edgeHL      = sim.createEdge(nodeH, nodeL, length, speed)
+    edgeLP      = sim.createEdge(nodeL, nodeP, length, speed)
+    
+    edgePO      = sim.createEdge(nodeP, nodeO, length, speed)
+    edgeON      = sim.createEdge(nodeO, nodeN, length, speed)
+    edgeNM      = sim.createEdge(nodeN, nodeM, length, speed)
+
+    edgeDH      = sim.createEdge(nodeM, nodeI, length, speed)
+    edgeHL      = sim.createEdge(nodeI, nodeE, length, speed)
+    edgeLP      = sim.createEdge(nodeE, nodeA, length, speed)
+
+    #   Mid edges
+    edgeBF      = sim.createEdge(nodeB, nodeF, length, speed)
+    edgeCG      = sim.createEdge(nodeC, nodeG, length, speed)
+
+    edgeGH      = sim.createEdge(nodeG, nodeH, length, speed)
+    edgeKL      = sim.createEdge(nodeK, nodeL, length, speed)
+
+    edgeKO      = sim.createEdge(nodeK, nodeO, length, speed)
+    edgeJN      = sim.createEdge(nodeJ, nodeN, length, speed)
+
+    edgeIJ      = sim.createEdge(nodeI, nodeJ, length, speed)
+    edgeEF      = sim.createEdge(nodeE, nodeF, length, speed)
+
+    #   Inner edges
+    edgeFG      = sim.createEdge(nodeF, nodeG, length, speed)
+    edgeGK      = sim.createEdge(nodeG, nodeK, length, speed)
+    edgeKJ      = sim.createEdge(nodeK, nodeJ, length, speed)
+    edgeFJ      = sim.createEdge(nodeF, nodeJ, length, speed)
+
+    assert len(sim.edges) == 2*24
+
+    print(f"\tCreated Edges")
+    print(f"Adding vehicles to simulation...")
+    for i in range(0, 150):
+        node1 = sim.nodes[randint(0, len(sim.nodes) - 1)]
+        node2 = sim.nodes[randint(0, len(sim.nodes) - 1)]
+        while node1 == node2:
+            node2 = sim.nodes[randint(0, len(sim.nodes) - 1)]
+        sim.createVehicle(node1, node2)
+    print(f"\tVehicles added to simulation.")
+
+    print(f"Running Baseline Simulation")
+    sim.runBaselineSimulation()
+    print(f"\tBaseline Simulation complete")
+    print(f"Running Optimized Simulation")
+    sim.runOptimizedSimulation()
+    print(f"\tOptimized Simulation complete")
+    sim.showResults()
+    sim.exportResults()
+
+    # Clean up
+    del sim
+
+@pytest.mark.sim
 def test_network_1():
     greenLength     = 40
     greenSpeed      = 110
@@ -419,7 +507,7 @@ def test_network_1():
     edgeGI      = sim.createEdge(nodeG, nodeI, redLength, redSpeed)
     print(f"\tCreated Edges")
     print(f"Adding vehicles to simulation...")
-    for i in range(0, 450):
+    for i in range(0, 400):
         node1 = sim.nodes[randint(0, len(sim.nodes) - 1)]
         node2 = sim.nodes[randint(0, len(sim.nodes) - 1)]
         while node1 == node2:
@@ -438,6 +526,5 @@ def test_network_1():
 
     # Clean up
     del sim
-
 
 
